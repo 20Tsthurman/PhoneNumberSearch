@@ -50,33 +50,48 @@ class PhoneNumberConverter:
         1. Look in Table1 for 10-digit matches
         2. If not found, look in Table2 for 7-digit matches
         3. If not found, try combinations of Table3 and Table4
-        4. If no matches found, return formatted number
+        4. If not found, look for exchange (3-digit) word only
+        5. If not found, look for number (4-digit) word only
+        6. If no matches found, return formatted number
         """
         if not number.isdigit() or len(number) != 10:
             return ["Error: Please enter a valid 10-digit number"]
             
         results = []
         
-        # 1. First try Table1 (10-digit words)
+        # 1. Check for 10-digit word
         ten_digit = self.table_10.find(int(number))
         if ten_digit:
             results.extend([f"1-{word}" for word in ten_digit])
-            return results
-            
-        # 2. If no match in Table1, try Table2 (7-digit words)
+            return results  # Step 1 found, return immediately
+
+        # 2. Check for 7-digit word
         seven_digit = self.table_7.find(int(number[3:]))
         if seven_digit:
             results.extend([f"1-{number[:3]}-{word}" for word in seven_digit])
-            return results
-        
-        # 3. If no match in Table2, try Table3 + Table4 combination
+            return results  # Step 2 found, return immediately
+
+        # 3. Check for combination of 3-digit and 4-digit words
         three_digit = self.table_3.find(int(number[3:6]))
         four_digit = self.table_4.find(int(number[6:]))
         if three_digit and four_digit:
             for word3 in three_digit:
                 for word4 in four_digit:
                     results.append(f"1-{number[:3]}-{word3}-{word4}")
-            return results
-                    
-        # 4. If no matches found, format the raw number
-        return [f"1-{number[:3]}-{number[3:6]}-{number[6:]}"]
+            return results  # Step 3 found, return immediately
+
+        # 4. Check for exchange (3-digit) word only
+        if three_digit:
+            for word3 in three_digit:
+                results.append(f"1-{number[:3]}-{word3}-{number[6:]}")
+            return results  # Step 4 found, return immediately
+
+        # 5. Check for number (4-digit) word only
+        if four_digit:
+            for word4 in four_digit:
+                results.append(f"1-{number[:3]}-{number[3:6]}-{word4}")
+            return results  # Step 5 found, return immediately
+
+        # 6. No matches found, return formatted number
+        results.append(f"1-{number[:3]}-{number[3:6]}-{number[6:]}")
+        return results
